@@ -27,7 +27,7 @@ const Login: NextPage = () => {
 	async function createAccount() {
 		setIsLoading(true);
 		let request: { data: { success: boolean; user: any } } | undefined;
-		
+
 		try {
 			// Add timeout to the request
 			request = await Promise.race([
@@ -70,7 +70,7 @@ const Login: NextPage = () => {
 		} finally {
 			setIsLoading(false);
 			if (!request) return;
-			
+
 			// Add a small delay before redirecting
 			setTimeout(() => {
 				Router.push("/");
@@ -152,20 +152,62 @@ const Login: NextPage = () => {
 
 					<div className="mt-7">
 						<label className="text-zinc-500 text-sm dark:text-zinc-200">Color</label>
-						<div className="grid grid-cols-10 gap-3 mt-2 mb-8">
+
+						{/* Preset Colors */}
+						<div className="grid grid-cols-10 gap-3 mt-2">
 							{colors.map((color, i) => (
 								<button
 									key={i}
 									type="button"
 									onClick={() => setSelectedColor(color)}
 									className={`aspect-square rounded-lg transform transition-all ease-in-out ${color} ${
-										selectedColor === color ? "ring-4 ring-black dark:ring-white ring-offset-2" : "hover:scale-105"
+										selectedColor === color 
+											? "ring-4 ring-black dark:ring-white ring-offset-2"
+											: "hover:scale-105"
 									}`}
 								/>
 							))}
 						</div>
+
+						{/* Custom Color Picker Button */}
+						<div className="mt-5">
+							<label className="text-zinc-500 text-sm dark:text-zinc-200">
+								Or pick a custom color
+							</label>
+
+							<button
+								type="button"
+								onClick={() => document.getElementById("customColorPicker")?.click()}
+								className="mt-2 py-2 px-4 rounded-lg border dark:border-white border-black 
+										   text-sm font-medium text-zinc-700 dark:text-white 
+										   hover:bg-zinc-200 dark:hover:bg-zinc-800 transition"
+							>
+								Choose custom color
+							</button>
+
+							<input
+								id="customColorPicker"
+								type="color"
+								className="hidden"
+								onChange={(e) => setSelectedColor(e.target.value)}
+							/>
+
+							{/* Show preview only if hex */}
+							{selectedColor.startsWith("#") && (
+								<div className="flex items-center gap-3 mt-3">
+									<div
+										className="w-8 h-8 rounded-lg border dark:border-white border-black"
+										style={{ backgroundColor: selectedColor }}
+									/>
+									<p className="text-sm dark:text-white">
+										Selected: {selectedColor}
+									</p>
+								</div>
+							)}
+						</div>
 					</div>
-					<div className="flex">
+
+					<div className="flex mt-7">
 						<button 
 							type="button"
 							onClick={() => window.open("https://docs.planetaryapp.cloud/", "_blank", "noopener,noreferrer")}
@@ -182,6 +224,8 @@ const Login: NextPage = () => {
 						</button>
 					</div>
 				</div>
+
+				{/* Slide 2 — Create Account */}
 				<div>
 					<p className="font-bold text-2xl dark:text-white" id="2">
 						Make your Orbit account
@@ -189,6 +233,7 @@ const Login: NextPage = () => {
 					<p className="text-md -mt-1 text-zinc-500 dark:text-zinc-200">
 						You need to create an Orbit account to continue
 					</p>
+
 					<FormProvider {...signupform}>
 						<form onSubmit={signupform.handleSubmit(createAccount)}>
 							<Input 
