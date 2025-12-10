@@ -35,13 +35,41 @@ import {
 } from "@tabler/icons-react"
 import clsx from "clsx"
 
+
+
+function resolveColor(color: string): {
+  className?: string
+  style?: React.CSSProperties
+} {
+  if (!color) return {}
+
+  const isHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)
+  const isRGB = /^rgb(a?)\(/i.test(color)
+  const isCSSName = /^[a-zA-Z]+$/.test(color)
+
+  // Tailwind-like if it contains spaces, "-" patterns, or dark:
+  const looksLikeTailwind =
+    color.includes(" ") ||
+    color.includes(":") ||
+    color.includes("from-") ||
+    color.includes("bg-") ||
+    color.includes("to-") ||
+    color.includes("dark:")
+
+  if (looksLikeTailwind && !isHex && !isRGB && !isCSSName) {
+    return { className: color }
+  }
+
+  return { style: { backgroundColor: color } }
+}
+
 interface WidgetConfig {
   component: React.FC
   icon: React.ComponentType<{ className?: string }>
   title: string
   description: string
   color: string
-  beta?: boolean;
+  beta?: boolean
 }
 
 const Home: pageWithLayout = () => {
@@ -90,7 +118,7 @@ const Home: pageWithLayout = () => {
       title: "Policies",
       description: "Track your policy acknowledgments",
       color: "bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20",
-	  beta: true,
+      beta: true,
     },
     compliance: {
       component: () => <ComplianceOverviewWidget workspaceId={workspace.groupId.toString()} />,
@@ -98,7 +126,7 @@ const Home: pageWithLayout = () => {
       title: "Compliance Overview",
       description: "Workspace-wide compliance metrics",
       color: "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20",
-	  beta: true,
+      beta: true,
     },
   }
 
@@ -107,10 +135,7 @@ const Home: pageWithLayout = () => {
       setIsLoadingTitle(document.title.includes("Loading"))
     }
 
-    const timer = setTimeout(() => {
-      setTitleVisible(true)
-    }, 300)
-
+    const timer = setTimeout(() => setTitleVisible(true), 300)
     return () => clearTimeout(timer)
   }, [])
 
@@ -130,31 +155,28 @@ const Home: pageWithLayout = () => {
       fetch(`/api/workspace/${workspace.groupId}/settings/general/policies`)
         .then(res => res.json())
         .then(data => {
-          let enabled = false;
-          let val = data.value ?? data;
+          let enabled = false
+          let val = data.value ?? data
           if (typeof val === "string") {
-            try { val = JSON.parse(val); } catch { val = {}; }
+            try { val = JSON.parse(val) } catch { val = {} }
           }
-          enabled =
-            typeof val === "object" && val !== null && "enabled" in val
-              ? (val as { enabled?: boolean }).enabled ?? false
-              : false;
-          setPoliciesEnabled(enabled);
+          enabled = typeof val === "object" && val?.enabled === true
+          setPoliciesEnabled(enabled)
         })
-        .catch(() => setPoliciesEnabled(false));
+        .catch(() => setPoliciesEnabled(false))
     }
   }, [workspace?.groupId])
 
   const handleRefresh = () => {
     setRefreshing(true)
-    setTimeout(() => {
-      setRefreshing(false)
-    }, 1000)
+    setTimeout(() => setRefreshing(false), 1000)
   }
 
   return (
     <div className="pagePadding">
       <div className="max-w-7xl mx-auto">
+
+        {/* TITLE */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div className="relative">
             <div className="absolute -left-3 -top-3 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
@@ -183,45 +205,52 @@ const Home: pageWithLayout = () => {
               </div>
             </div>
           </div>
+
           <div className="flex items-center gap-3">
             <button
               onClick={handleRefresh}
               className="p-2 rounded-full bg-white dark:bg-zinc-800 shadow-sm hover:shadow transition-all duration-200 text-zinc-500 dark:text-zinc-300 hover:text-primary dark:hover:text-primary"
-              aria-label="Refresh dashboard"
             >
               <IconRefresh className={clsx("w-5 h-5", refreshing && "animate-spin")} />
             </button>
-           
           </div>
         </div>
+
+        {/* POLICIES BANNER */}
         {policiesEnabled && (
           <div className="mb-8 z-0 relative">
             <PolicyNotificationBanner
               workspaceId={workspace.groupId.toString()}
               onPolicyClick={(policyId) => {
-                if (policyId === 'dashboard') {
-                  router.push(`/workspace/${workspace.groupId}/policies`);
-                } else {
-                  router.push(`/workspace/${workspace.groupId}/policies/sign/${policyId}`);
-                }
+                if (policyId === "dashboard")
+                  router.push(`/workspace/${workspace.groupId}/policies`)
+                else
+                  router.push(`/workspace/${workspace.groupId}/policies/sign/${policyId}`)
               }}
             />
           </div>
         )}
-        {Array.isArray(workspace.settings.widgets) && workspace.settings.widgets.includes("birthdays") && (
-          <div className="mb-8 z-0 relative">
-            <Birthdays />
-          </div>
-        )}
-        {Array.isArray(workspace.settings.widgets) && workspace.settings.widgets.includes("new_members") && (
-          <div className="mb-8 z-0 relative">
-            <NewToTeam />
-          </div>
-        )}
+
+        {/* OPTIONAL WIDGETS */}
+        {Array.isArray(workspace.settings.widgets) &&
+          workspace.settings.widgets.includes("birthdays") && (
+            <div className="mb-8 z-0 relative">
+              <Birthdays />
+            </div>
+          )}
+
+        {Array.isArray(workspace.settings.widgets) &&
+          workspace.settings.widgets.includes("new_members") && (
+            <div className="mb-8 z-0 relative">
+              <NewToTeam />
+            </div>
+          )}
+
         <div className="mb-8 z-0 relative">
           <StickyNoteAnnouncement />
         </div>
 
+        {/* MAIN CONTENT */}
         {loading ? (
           <div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-sm p-12 text-center border border-zinc-100 dark:border-zinc-700">
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/10 to-primary/30 flex items-center justify-center">
@@ -245,8 +274,13 @@ const Home: pageWithLayout = () => {
             {workspace.settings.widgets.map((widget, index) => {
               const widgetConfig = widgets[widget]
               if (!widgetConfig) return null
+
               const Widget = widgetConfig.component
               const Icon = widgetConfig.icon
+
+              // Apply tailwind or raw hex/rgb color
+              const colorProps = resolveColor(widgetConfig.color)
+
               return (
                 <div
                   key={widget}
@@ -255,19 +289,31 @@ const Home: pageWithLayout = () => {
                     "transform hover:-translate-y-1",
                   )}
                 >
-                  <div className={`px-6 py-5 ${widgetConfig.color} border-b border-zinc-100 dark:border-zinc-700`}>
+                  <div
+                    className={clsx(
+                      "px-6 py-5 border-b border-zinc-100 dark:border-zinc-700",
+                      colorProps.className
+                    )}
+                    style={colorProps.style}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
                         <Icon className="w-5 h-5 text-primary" />
                       </div>
                       <div>
                         <div className="flex flex-row items-center gap-2">
-							<h2 className="text-lg font-bold text-zinc-900 dark:text-white">{widgetConfig.title}</h2>
-							{widgetConfig.beta && <span className="px-1.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full">
-								BETA
-							</span>}
-						</div>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-300">{widgetConfig.description}</p>
+                          <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+                            {widgetConfig.title}
+                          </h2>
+                          {widgetConfig.beta && (
+                            <span className="px-1.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full">
+                              BETA
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+                          {widgetConfig.description}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -284,28 +330,28 @@ const Home: pageWithLayout = () => {
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/10 to-primary/30 flex items-center justify-center">
               <IconHome className="w-12 h-12 text-primary" />
             </div>
-            <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-3 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
+            <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">
               Your dashboard is empty
             </h3>
             <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-md mx-auto">
               Add widgets to your workspace to see important information at a glance
             </p>
             <button
-              onClick={() => (window.location.href = `/workspace/${workspace.groupId}/settings`)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all duration-300 shadow-sm hover:shadow group"
+              onClick={() =>
+                (window.location.href = `/workspace/${workspace.groupId}/settings`)
+              }
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all duration-300 shadow-sm hover:shadow"
             >
               <IconPlus className="w-5 h-5" />
               <span>Configure Dashboard</span>
-              <IconChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              <IconChevronRight className="w-4 h-4 ml-1" />
             </button>
           </div>
         )}
-
       </div>
     </div>
   )
 }
-
 
 Home.layout = Workspace
 
