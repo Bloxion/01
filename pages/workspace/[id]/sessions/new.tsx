@@ -627,6 +627,7 @@ const Home: pageWithLayout<InferGetServerSidePropsType<GetServerSideProps>> = ({
                     <option value="shift">Shift</option>
                     <option value="training">Training</option>
                     <option value="event">Event</option>
+                    <option value="alliance visit">Alliance visit</option>
                     <option value="other">Other</option>
                   </select>
                   {form.formState.errors.type && (
