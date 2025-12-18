@@ -61,7 +61,7 @@ export async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
       .json({ success: false, error: "Missing schedule details" });
   }
 
-  const validTypes = ["shift", "training", "event", "other"];
+  const validTypes = ["shift", "training", "event", "other", "alliance visit"];
   if (!validTypes.includes(type)) {
     return res
       .status(400)
